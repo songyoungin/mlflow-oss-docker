@@ -99,6 +99,40 @@ export OTEL_EXPORTER_OTLP_TRACES_HEADERS="Authorization=Basic $(printf 'admin:ad
 > Google ADK는 OpenTelemetry 네이티브이므로 위 OTLP 엔드포인트로 span이 수집됩니다.
 > A2A 프로토콜은 MLflow 전용 통합은 없으며, W3C trace context 전파(OTel) 경유로 동작합니다.
 
+### 실제 ADK + OpenAI 멀티에이전트 트레이싱 (`examples/adk_agent.py`)
+
+오케스트레이터가 두 서브에이전트(`research_agent`, `math_agent`)를 `AgentTool`로 호출하는
+실제 ADK 에이전트를 OpenAI(gpt-4o-mini)로 실행하고, OTel로 MLflow에 트레이스를 보낸다.
+
+```bash
+uv pip install -r examples/requirements-adk.txt
+# OPENAI_API_KEY는 .env에 넣어두고 로드
+set -a; . ./.env; set +a
+
+# 트레이스 수신용 experiment 생성 후 그 id로 라우팅
+EXPID=$(curl -s -u admin:adminpassword -H "Content-Type: application/json" -X POST \
+  http://localhost:5050/api/2.0/mlflow/experiments/create -d '{"name":"adk-openai-test"}' \
+  | python3 -c "import sys,json;print(json.load(sys.stdin)['experiment_id'])")
+
+export OTEL_EXPORTER_OTLP_ENDPOINT="http://localhost:5050"
+export OTEL_EXPORTER_OTLP_HEADERS="Authorization=Basic $(printf 'admin:adminpassword' | base64),x-mlflow-experiment-id=${EXPID}"
+
+.venv/bin/python examples/adk_agent.py
+```
+
+검증 결과(실측): 23-span 트레이스가 기록되며 **subagent 패턴**이 그대로 보인다.
+
+```
+invocation
+└ invoke_agent orchestrator [AGENT]
+   └ generate_content openai/gpt-4o-mini [LLM]
+      ├ execute_tool research_agent [TOOL] → invoke_agent research_agent [AGENT] → web_search [TOOL]
+      └ execute_tool math_agent [TOOL]     → invoke_agent math_agent [AGENT]     → calculator [TOOL]
+```
+
+각 LLM span에 **실제 모델/토큰/비용**이 기록된다(`gen_ai.usage.*`, `mlflow.llm.cost`).
+프롬프트 본문(`mlflow.spanInputs/Outputs`)은 기본 OTel export에서 비어 보일 수 있다.
+
 ## 정리
 
 ```bash

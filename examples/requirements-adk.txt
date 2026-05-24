@@ -1,0 +1,6 @@
+# 실제 Google ADK + OpenAI → MLflow OTLP 트레이싱 예제(adk_agent.py)용 의존성
+google-adk==2.1.0
+litellm
+openai
+opentelemetry-exporter-otlp-proto-http
+mlflow==3.12.0
