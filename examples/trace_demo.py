@@ -13,9 +13,9 @@ import mlflow
 from mlflow.entities import SpanType
 
 os.environ.setdefault("MLFLOW_TRACKING_USERNAME", "admin")
-os.environ.setdefault("MLFLOW_TRACKING_PASSWORD", "password")
+os.environ.setdefault("MLFLOW_TRACKING_PASSWORD", "adminpassword")
 
-mlflow.set_tracking_uri(os.environ.get("MLFLOW_TRACKING_URI", "http://localhost:5000"))
+mlflow.set_tracking_uri(os.environ.get("MLFLOW_TRACKING_URI", "http://localhost:5050"))
 mlflow.set_experiment("demo-tracing")
 
 
@@ -40,4 +40,4 @@ def agent(question: str) -> str:
 if __name__ == "__main__":
     answer = agent("MLflow 트레이싱이란 무엇인가?")
     print(f"에이전트 응답: {answer}")
-    print("UI의 'Traces' 탭에서 span 트리를 확인: http://localhost:5000")
+    print("UI의 'Traces' 탭에서 span 트리를 확인: http://localhost:5050")

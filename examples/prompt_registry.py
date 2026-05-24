@@ -10,9 +10,9 @@ import os
 import mlflow
 
 os.environ.setdefault("MLFLOW_TRACKING_USERNAME", "admin")
-os.environ.setdefault("MLFLOW_TRACKING_PASSWORD", "password")
+os.environ.setdefault("MLFLOW_TRACKING_PASSWORD", "adminpassword")
 
-mlflow.set_tracking_uri(os.environ.get("MLFLOW_TRACKING_URI", "http://localhost:5000"))
+mlflow.set_tracking_uri(os.environ.get("MLFLOW_TRACKING_URI", "http://localhost:5050"))
 
 PROMPT_NAME = "summarization-prompt"
 
@@ -43,7 +43,7 @@ def main() -> None:
     rendered = prod.format(num_sentences=3, content="샘플 텍스트입니다.")
     print("\n[production 프롬프트 렌더링 결과]")
     print(rendered)
-    print("\nUI의 'Prompts' 탭에서 버전 히스토리/diff를 확인: http://localhost:5000")
+    print("\nUI의 'Prompts' 탭에서 버전 히스토리/diff를 확인: http://localhost:5050")
 
 
 if __name__ == "__main__":

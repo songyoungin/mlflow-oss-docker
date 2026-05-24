@@ -14,9 +14,9 @@ import mlflow
 
 # basic-auth 자격증명 (없으면 기본 관리자 계정 사용)
 os.environ.setdefault("MLFLOW_TRACKING_USERNAME", "admin")
-os.environ.setdefault("MLFLOW_TRACKING_PASSWORD", "password")
+os.environ.setdefault("MLFLOW_TRACKING_PASSWORD", "adminpassword")
 
-mlflow.set_tracking_uri(os.environ.get("MLFLOW_TRACKING_URI", "http://localhost:5000"))
+mlflow.set_tracking_uri(os.environ.get("MLFLOW_TRACKING_URI", "http://localhost:5050"))
 
 
 def main() -> None:
@@ -29,7 +29,7 @@ def main() -> None:
             mlflow.log_metric("accuracy", random.uniform(0.7, 0.99), step=epoch)
         mlflow.log_text("아티팩트 저장 테스트(MinIO 프록시)", "notes.txt")
         print(f"run 생성 완료: {run.info.run_id}")
-    print("UI에서 확인: http://localhost:5000")
+    print("UI에서 확인: http://localhost:5050")
 
 
 if __name__ == "__main__":

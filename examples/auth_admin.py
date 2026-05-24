@@ -17,11 +17,11 @@ import os
 import mlflow
 from mlflow.server import get_app_client
 
-TRACKING_URI = os.environ.get("MLFLOW_TRACKING_URI", "http://localhost:5000")
+TRACKING_URI = os.environ.get("MLFLOW_TRACKING_URI", "http://localhost:5050")
 
 # Admin API는 관리자 자격증명으로 인증해야 한다
 os.environ.setdefault("MLFLOW_TRACKING_USERNAME", "admin")
-os.environ.setdefault("MLFLOW_TRACKING_PASSWORD", "password")
+os.environ.setdefault("MLFLOW_TRACKING_PASSWORD", "adminpassword")
 
 mlflow.set_tracking_uri(TRACKING_URI)
 
@@ -31,7 +31,7 @@ def main() -> None:
 
     # 1. 유저 생성 (이미 존재하면 건너뜀)
     try:
-        auth_client.create_user(username="bob", password="bob-password")
+        auth_client.create_user(username="bob", password="bob-password-1")
         print("유저 생성: bob")
     except Exception as exc:  # 이미 존재 등
         print(f"유저 생성 건너뜀: {exc}")
@@ -61,7 +61,7 @@ def main() -> None:
     )
     print("bob → READ 권한 재부여")
 
-    print("\nbob / bob-password 로 로그인해 권한 변화를 확인: http://localhost:5000")
+    print("\nbob / bob-password-1 로 로그인해 권한 변화를 확인: http://localhost:5050")
 
 
 if __name__ == "__main__":

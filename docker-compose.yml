@@ -67,6 +67,8 @@ services:
       MLFLOW_S3_ENDPOINT_URL: http://minio:9000
       # basic-auth 플러그인 설정 파일 경로
       MLFLOW_AUTH_CONFIG_PATH: /config/basic_auth.ini
+      # basic-auth는 CSRF 보호용 정적 시크릿 키가 필수다
+      MLFLOW_FLASK_SERVER_SECRET_KEY: ${MLFLOW_FLASK_SERVER_SECRET_KEY}
     command: >
       mlflow server
       --backend-store-uri postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
@@ -78,9 +80,10 @@ services:
       - ./mlflow/basic_auth.ini:/config/basic_auth.ini:ro
       - mlflow-auth:/mlflow-auth
     ports:
-      - "5000:5000"
+      # 호스트 5000은 macOS AirPlay Receiver가 점유하므로 5050으로 노출한다
+      - "5050:5000"
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/health')"]
+      test: ["CMD", "python", "/healthcheck.py"]
       interval: 10s
       timeout: 5s
       retries: 10

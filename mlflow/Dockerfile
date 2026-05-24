@@ -14,6 +14,9 @@ RUN pip install --no-cache-dir \
 # 인증 DB(sqlite)가 저장될 위치
 RUN mkdir -p /mlflow-auth
 
+# 컨테이너 healthcheck 스크립트
+COPY healthcheck.py /healthcheck.py
+
 WORKDIR /mlflow
 
 EXPOSE 5000
