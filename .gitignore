@@ -1,0 +1,15 @@
+# 환경변수 (자격증명 포함)
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# MLflow 로컬 산출물
+mlruns/
+mlartifacts/
+
+# OS
+.DS_Store

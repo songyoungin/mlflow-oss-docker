@@ -1,0 +1,97 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: mlflow-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks: [mlflow-net]
+
+  minio:
+    image: minio/minio:latest
+    container_name: mlflow-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    ports:
+      - "9000:9000"  # S3 API
+      - "9001:9001"  # 웹 콘솔
+    volumes:
+      - minio-data:/data
+    networks: [mlflow-net]
+
+  # MinIO에 아티팩트용 버킷을 생성하고 종료되는 일회성 잡
+  minio-init:
+    image: minio/mc:latest
+    container_name: mlflow-minio-init
+    depends_on:
+      - minio
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      MLFLOW_BUCKET: ${MLFLOW_BUCKET}
+    entrypoint: >
+      /bin/sh -c "
+      until mc alias set local http://minio:9000 \"$$MINIO_ROOT_USER\" \"$$MINIO_ROOT_PASSWORD\"; do
+        echo 'minio 대기 중...'; sleep 2;
+      done;
+      mc mb --ignore-existing local/\"$$MLFLOW_BUCKET\";
+      echo '버킷 준비 완료: '\"$$MLFLOW_BUCKET\";
+      "
+    networks: [mlflow-net]
+
+  mlflow:
+    build: ./mlflow
+    container_name: mlflow-server
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+    environment:
+      # MinIO(S3)에 접근하기 위한 자격증명 — 서버가 아티팩트를 프록시한다
+      AWS_ACCESS_KEY_ID: ${MINIO_ROOT_USER}
+      AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD}
+      MLFLOW_S3_ENDPOINT_URL: http://minio:9000
+      # basic-auth 플러그인 설정 파일 경로
+      MLFLOW_AUTH_CONFIG_PATH: /config/basic_auth.ini
+    command: >
+      mlflow server
+      --backend-store-uri postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      --artifacts-destination s3://${MLFLOW_BUCKET}
+      --host 0.0.0.0
+      --port 5000
+      --app-name basic-auth
+    volumes:
+      - ./mlflow/basic_auth.ini:/config/basic_auth.ini:ro
+      - mlflow-auth:/mlflow-auth
+    ports:
+      - "5000:5000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks: [mlflow-net]
+
+volumes:
+  postgres-data:
+  minio-data:
+  mlflow-auth:
+
+networks:
+  mlflow-net:
+    driver: bridge
